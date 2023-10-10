@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package org.example;
+
+service TestService {
+  rpc Hello(stream MyMessage) returns (stream MyMessage) {}
+}
+
+message MyMessage {
+  bytes data = 1;
+}
