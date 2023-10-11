@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  envoy:
+    image: envoyproxy/envoy:v1.27-latest
+    ports:
+      - '8000:8000'
+      - '9090:9090'
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml
+#  python-server:
+#    build:
+#      context: python
+#    ports:
+#      - '8080:8080'
+#    volumes:
+#      - ./python:/usr/src/app
+#    entrypoint: python server.py
+  java-server:
+    image: eclipse-temurin:17
+    ports:
+      - '8080:8080'
+      - '5005:5005'
+    volumes:
+      - ./build/install/envoy-rst-stream:/app
+    entrypoint: /app/bin/envoy-rst-stream
