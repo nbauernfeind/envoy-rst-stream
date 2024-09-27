@@ -14,8 +14,7 @@ public class TestServiceGrpcImpl extends TestServiceGrpc.TestServiceImplBase {
     private static final ExecutorService execService = Executors.newSingleThreadExecutor();
     private static final ByteString data;
     static {
-        // 1m bytes is usually too small, 4m is usually about right
-        int bytes = 4_000_000;
+        int bytes = 256;
         int count = bytes / 4;
 
         // send negative values, ending in 0x00 00 00 00, so we can visually how many are left
@@ -25,20 +24,21 @@ public class TestServiceGrpcImpl extends TestServiceGrpc.TestServiceImplBase {
         data = ByteString.copyFrom(bb);
         System.out.println(data.size() + " bytes");
     }
+
     @Override
     public StreamObserver<Test.MyMessage> hello(StreamObserver<Test.MyMessage> responseObserver) {
-        // end a bunch of data off-thread
-        execService.submit(() -> {
-            responseObserver.onNext(Test.MyMessage.newBuilder()
-                    .setData(data)
-                    .build());
-            // half-close right away - note that a delay here will prevent the bug
-            responseObserver.onCompleted();
-        });
-        // return a no-op observer
         return new StreamObserver<>() {
             @Override
-            public void onNext(Test.MyMessage value) {}
+            public void onNext(Test.MyMessage value) {
+                // imitate the example we're seeing
+                execService.submit(() -> {
+                    responseObserver.onNext(Test.MyMessage.newBuilder()
+                            .setData(data)
+                            .build());
+                    responseObserver.onCompleted();
+                });
+            }
+
             @Override
             public void onError(Throwable t) {}
             @Override

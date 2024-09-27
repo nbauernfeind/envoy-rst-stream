@@ -1,10 +1,21 @@
-# Reproducer for `RST_STREAM` issue with Envoy
+# Reproducer for `RST_STREAM` issue with Bidirection Streaming Python gRPC Client
+
+## Setup python
+
+We recommend setting up a venv and installing known dependencies. These can be found in `requirements.txt`.
+
+## Generate python stubs from the proto file
+
+Run:
+```shell
+./generate_from_proto.sh
+```
 
 ## Starting the server and envoy
 To start the java server and envoy, run
 
 ```shell
-./gradlew installDist && docker-compose up
+./gradlew installDist && docker compose up
 ```
 
 To change to a python server implementation, edit docker-compose.yml to disable `java-server` and enable `python-server`,
@@ -15,23 +26,12 @@ Note that `docker-compose down` may be required to fully clean up when switching
 
 ## Running the Python client
 
-We haven't reproduced the bug with the python/c++ client.
+We haven't reproduced the bug on any client except the python client.
 
 To verify the python client connecting to the plain server, run
 
 ```shell
-python python/client.py localhost:8080
+python python/client.py localhost:10000
 ```
 
-Change the port to 8000 to test against Envoy.
-
-## Running the Java client
-
-To run the Java client connecting to the plain server, run
-
-```shell
-./gradlew runClient --args='localhost:8080'
-```
-
-Change the port to 8000 to test against Envoy, which should fail. If it doesn't fail, try increasing
-the server data size in `TestServiceGrpcImpl` and rebuilding/restarting the server.
+Change the port to 8000 to test against Envoy. (envoy is unnecessary to repro this issue)

@@ -9,6 +9,8 @@ import org.example.TestServiceGrpc;
 import java.util.concurrent.CountDownLatch;
 
 public class StartClient {
+    public static CountDownLatch countDownLatch = new CountDownLatch(2);
+
     public static void main(String[] args) throws InterruptedException {
         String target = args[0];
         System.out.println(target);
@@ -19,30 +21,38 @@ public class StartClient {
 
         ManagedChannel channel = channelBuilder.build();
         TestServiceGrpc.TestServiceStub stub = TestServiceGrpc.newStub(channel);
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        //noinspection unused - see commented out call.onCompleted
-        StreamObserver<Test.MyMessage> call = stub.hello(new StreamObserver<>() {
-            @Override
-            public void onNext(Test.MyMessage value) {
-                System.out.println("onNext " + value.getData().size());
-            }
 
-            @Override
-            public void onError(Throwable t) {
-                System.out.println(System.currentTimeMillis());
-                t.printStackTrace();
-                countDownLatch.countDown();
-            }
+        StreamObserver<Test.MyMessage> c1 = stub.hello(new HelloObserver("c1"));
+        StreamObserver<Test.MyMessage> c2 = stub.hello(new HelloObserver("c2"));
 
-            @Override
-            public void onCompleted() {
-                System.out.println("onCompleted");
-                countDownLatch.countDown();
-            }
-        });
-        // uncommenting this line will prevent the bug
-//        call.onCompleted();
         countDownLatch.await();
+        c1.onCompleted();
+        c2.onCompleted();
+    }
 
+    public static class HelloObserver implements StreamObserver<Test.MyMessage> {
+        private final String id;
+
+        public HelloObserver(String id) {
+            this.id = id;
+        }
+
+        @Override
+        public void onNext(Test.MyMessage value) {
+            System.out.println(id + ":onNext " + value.getData().size());
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            System.out.println(id + ":onError at " + System.currentTimeMillis());
+            t.printStackTrace();
+            countDownLatch.countDown();
+        }
+
+        @Override
+        public void onCompleted() {
+            System.out.println(id + ":onCompleted at " + System.currentTimeMillis());
+            countDownLatch.countDown();
+        }
     }
 }
